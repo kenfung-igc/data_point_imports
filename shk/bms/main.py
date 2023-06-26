@@ -188,10 +188,10 @@ def predict_asset_type(clf, points):
 def export_to_csv(points):
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     points.sort_values(by=['asset_group', 'asset_code', 'point_type'])
-    points[['asset_group', 'asset_code', 'BMS_Item Reference', 'BMS_Name', 'point_type']].to_csv(f'point_asset_codes_{timestamp}.csv')
+    points[['asset_group', 'asset_code', 'BMS_Item Reference', 'BMS_Name', 'point_type']].to_csv(f'point_asset_code_{timestamp}.csv')
     print(f'Exported asset code mappings to point_asset_code_{timestamp}.csv')
     point_types = points[['asset_group', 'point_type']].drop_duplicates().sort_values(by=['asset_group', 'point_type'])
-    point_types[~point_types.asset_group.isna()].to_csv(f'point_asset_groups_{timestamp}.csv')
+    point_types[~point_types.asset_group.isna()].to_csv(f'point_asset_group_{timestamp}.csv')
     print(f'Exported asset group mappings to point_asset_group_{timestamp}.csv')
 
 
