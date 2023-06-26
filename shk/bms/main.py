@@ -196,7 +196,7 @@ def export_to_csv(points):
 
 
 if __name__ == '__main__':
-    known_points = load_points('points2.csv', train=True, feel_lucky=True)
+    known_points = load_points('points_manually_mapped.csv', train=True, feel_lucky=True)
     clf = train_asset_type_clf(known_points)
     known_points = load_points('points.csv', train=True, feel_lucky=True)
     clf = train_asset_type_clf(known_points, clf)
