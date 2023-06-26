@@ -1,5 +1,5 @@
-point_asset_groups*.csv
-point_asset_codes*.csv
+point_asset_group_2*.csv
+point_asset_code_2*.csv
 *.xls
 *.xlsx
 **/venv/
