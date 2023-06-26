@@ -128,7 +128,10 @@ def load_points(csv_filename, train=False, feel_lucky=False):
         points['asset_type'] = points.apply(asset_type, axis=1)
     if train:
         points = points[~points['asset_type'].isna()]
-    print(f'\nLoaded {len(points)} points')
+        print(f'\nFitting model on {len(points)} points')
+    else:
+        print(f'\nPredicting {len(points)} points')
+
     return points
 
 
@@ -164,12 +167,12 @@ def train_asset_type_clf(points, clf=None):
     clf.fit(X_train, y_train)
     test_df['predicted_asset_type'] = clf.predict(X_test)
     test_df = test_df.merge(points, left_index=True, right_index=True).merge(y_test, left_index=True, right_index=True)
-    print(f"\nPredicted asset type with {round(precision_score(test_df['actual_asset_type'], test_df['predicted_asset_type'], average='micro'), 3)} precision")
+    print(f"Predicted asset type with {round(precision_score(test_df['actual_asset_type'], test_df['predicted_asset_type'], average='micro'), 3)} precision")
     test_df['predicted_asset_type_raw'] = test_df['predicted_asset_type']
     test_df['matched'] = test_df.apply(lambda x: bool(re.search(x['predicted_asset_type'], x['reference'])), axis=1)
     test_df.loc[~test_df['matched'], 'predicted_asset_type'] = None
     missed = test_df[test_df['predicted_asset_type'] != test_df['actual_asset_type']]
-    print(f"\nMisclassified {len(missed)} points:\n {missed[['reference', 'predicted_asset_type_raw']]}")
+    print(f"Failed to predict asset type for {len(missed)} points:\n {missed[['reference', 'predicted_asset_type_raw']]}")
     return clf
 
 
@@ -190,7 +193,7 @@ def predict_asset_type(clf, points):
     points['predicted_asset_type_raw'] = points['predicted_asset_type']
     points.loc[~points['matched'], 'predicted_asset_type'] = None
     points['asset_type'] = points['predicted_asset_type']
-    print(f"\nFail to predict asset type for {len(points[~points['matched']].index)} points")
+    print(f"\nFailed to predict asset type for {len(points[~points['matched']].index)} points")
     return clf
 
 
