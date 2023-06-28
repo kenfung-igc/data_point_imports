@@ -60,6 +60,7 @@ def map_attributes(points):
     points['asset_group'] = points.apply(asset_group, axis=1)
     points['asset_code'] = points.apply(asset_code, axis=1)
     points['point_type'] = points.apply(point_type, axis=1)
+    points['class'] = points.apply(lambda x: 'Alarm' if re.search('alarm', x.bms_object_type.lower()) else 'Point', axis=1)
     points = points[~points['asset_group'].isna()]
     mapping = generate_mapping(points)
     points['point_description'] = points.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_description'][0], axis=1)
@@ -120,12 +121,15 @@ def generate_mapping(points):
     return mapping
 
 
-def load_points(csv_filename, train=False, feel_lucky=False):
+def load_points(csv_filename, train=False, feel_lucky=False, include_alarms=False):
+    object_types = POINT_TYPES
+    if include_alarms:
+        object_types += ALARM_TYPES
     points = pd.read_csv(csv_filename, index_col=False)
     points.fillna('', inplace=True)
     points.bms_units.replace(0, '', inplace=True)
     if 'bms_object_type' in points.columns:
-        points = points[points.apply(lambda x: x.bms_object_type in POINT_TYPES, axis=1)]
+        points = points[points.apply(lambda x: x.bms_object_type in object_types, axis=1)]
     points['tower'] = points['bms_item_reference'].apply(tower)
     points['floor'] = points['bms_item_reference'].apply(floor)
     points['zone'] = points['bms_item_reference'].apply(zone)
@@ -209,10 +213,10 @@ def predict_asset_type(clf, points):
 
 def export_to_csv(points):
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    points.sort_values(by=['asset_group', 'asset_code', 'point_type'])
-    points[['asset_group', 'asset_code', 'bms_item_reference', 'bms_name', 'point_type', 'point_description', 'unit']].to_csv(f'point_asset_code_{timestamp}.csv')
+    points.sort_values(by=['class', 'asset_group', 'asset_code', 'point_type'], inplace=True)
+    points[['asset_group', 'asset_code', 'bms_item_reference', 'bms_name', 'point_type', 'point_description', 'unit', 'class']].to_csv(f'point_asset_code_{timestamp}.csv')
     print(f'\nExported asset code mappings to point_asset_code_{timestamp}.csv')
-    point_types = points[['asset_group', 'point_type', 'point_description', 'unit']].drop_duplicates().sort_values(by=['asset_group', 'point_type'])
+    point_types = points[['asset_group', 'point_type', 'point_description', 'unit', 'class']].drop_duplicates()
     point_types = point_types[~point_types.asset_group.isna()]
     point_types.to_csv(f'point_asset_group_{timestamp}.csv')
     print(f'\nExported asset group mappings to point_asset_group_{timestamp}.csv')
@@ -223,9 +227,9 @@ if __name__ == '__main__':
     clf = train_asset_type_clf(known_points)
     known_points = load_points('points.csv', train=True, feel_lucky=True)
     clf = train_asset_type_clf(known_points, clf)
-    points = load_points('points.csv', train=False)
+    points = load_points('points.csv', train=False, include_alarms=True)
     predict_asset_type(clf, points)
     show_feature_importances(clf, show_count=30)
     points = map_attributes(points)
-    export_to_csv(points.sort_values(by=['asset_type', 'tower', 'floor', 'zone', 'asset_seq']))
+    export_to_csv(points)
     exit(0)
