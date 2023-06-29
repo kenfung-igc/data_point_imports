@@ -13,7 +13,7 @@ ASSET_TYPE_FILE = 'asset_groups.csv'
 ASSET_GROUP = pd.read_csv(ASSET_TYPE_FILE, index_col=False).fillna('')
 ASSET_GROUP.set_index('asset_type', inplace=True)
 ASSET_TYPES = ASSET_GROUP.index
-SIMPLE_ASSET_TYPES = ['CHWSH', 'CHDSYS', 'WCC', 'CDWBYPASS', 'TWP', 'CLWT']
+SIMPLE_ASSET_TYPES = ['CHWSH', 'CHDSYS', 'WCC', 'CDWBYPASS', 'CLWT', 'GEN', 'MUWP']
 POINT_TYPES = ['BI Mapper', 'BO Mapper', 'AV Mapper', 'MSV Mapper', 'AO Mapper', 'AI Mapper', 'BV Mapper', 'JCI Family BACnet Device']
 ALARM_TYPES = ['Analog Alarm', 'Multistate Alarm']
 
@@ -61,25 +61,38 @@ def map_attributes(points):
     points['asset_code'] = points.apply(asset_code, axis=1)
     points['point_type'] = points.apply(point_type, axis=1)
     points['class'] = points.apply(lambda x: 'Alarm' if re.search('alarm', x.bms_object_type.lower()) else 'Point', axis=1)
-    points = points[~points['asset_group'].isna()]
-    mapping = generate_mapping(points)
-    points['point_description'] = points.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_description'][0], axis=1)
-    points['unit'] = points.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_units'][0].lstrip('unitEnumSet.'), axis=1)
+    points_to_map = points[~points['asset_group'].isna()]
+    mapping = generate_mapping(points_to_map)
+    points['point_description'] = points_to_map.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_description'][0], axis=1)
+    points['unit'] = points_to_map.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_units'][0].lstrip('unitEnumSet.'), axis=1)
     return points
 
 
 def asset_type(point):
     if hasattr(point, 'asset_type') and point.asset_type:
         return point.asset_type
-    ref = point['bms_item_reference']
-    name = point['bms_name']
-    for t in ASSET_TYPES:
-        if re.search(f'^{t}', name) or re.search(f'\.{t}', ref.split('.')[-1]):
-            return t
+    ref = point.bms_item_reference
+    name = point.bms_name
+
+    type_by_name = next((a for a in ASSET_TYPES if re.search(f'^{a}', name)), None)
+    type_by_ref = None
+
     if re.search('FC1.', ref):
-        type_ref = ref.split('FC1.')[1].split('-')[0]
-        if type_ref != 'DDC':
-            return re.sub(r'\d$', '', type_ref)
+        ref = ref.split('FC1.')[1]
+        tokens = ref.split('.')[::-1]
+        while tokens and not type_by_ref:
+            token = tokens.pop()
+            type_by_ref = next((a for a in ASSET_TYPES if re.search(f'\.{a}', token)), None)
+
+    if type_by_name and type_by_ref:
+        if type_by_name == type_by_ref:
+            return type_by_name
+        else:
+            print(f'Name {name} indicates {type_by_name}. Ref {ref} indicates {type_by_ref}. Which to choose?')
+    elif type_by_name:
+        return type_by_name
+    elif type_by_ref:
+        return type_by_ref
     return None
 
 
@@ -183,7 +196,7 @@ def train_asset_type_clf(points, clf=None):
     test_df = test_df.merge(points, left_index=True, right_index=True).merge(y_test, left_index=True, right_index=True)
     print(f"Predicted asset type with {round(precision_score(test_df['actual_asset_type'], test_df['predicted_asset_type'], average='micro'), 3)} precision")
     test_df['predicted_asset_type_raw'] = test_df['predicted_asset_type']
-    test_df['matched'] = test_df.apply(lambda x: bool(re.search(x['predicted_asset_type'], x['reference'])), axis=1)
+    test_df['matched'] = test_df.apply(lambda x: bool(re.search(f"\.{x['predicted_asset_type']}", x['reference'])), axis=1)
     test_df.loc[~test_df['matched'], 'predicted_asset_type'] = None
     missed = test_df[test_df['predicted_asset_type'] != test_df['actual_asset_type']]
     print(f"Failed to predict asset type for {len(missed)} points:\n {missed[['reference', 'predicted_asset_type_raw']]}")
