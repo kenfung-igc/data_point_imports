@@ -1,4 +1,4 @@
-﻿Asset Group Name,asset_group,"BMS ""Word""",,Asset Name/Space Name,point_description,bms_item_reference,BMS_Object ID,bms_object_type,bms_name,bms_units,Interval Sec,DC
+Asset Group Name,asset_group,asset_type,,Asset Name/Space Name,point_description,bms_item_reference,BMS_Object ID,bms_object_type,bms_name,bms_units,Interval Sec,DC
 Lighting,ELEC-LTG,LTG,98HMS-1-L30-ELEC-LTG,98HMS-1-L30-ELEC-LTG-01,Auto/Manaul Status,HMS-T:SNE-T1-L30-01/FC1.LTG-01.LTG-01-AM,775252f2-a53d-5a0d-ac29-b2d8bbe9ccb9,BI Mapper,LTG-01-AM,,0,TURE
 Lighting,ELEC-LTG,LTG,98HMS-1-L30-ELEC-LTG,98HMS-1-L30-ELEC-LTG-01,On/Off Control,HMS-T:SNE-T1-L30-01/FC1.LTG-01.LTG-01-C,638c3b58-e95c-5c3c-bdf8-6175aa95ccf3,BO Mapper,LTG-01-C,,0,TURE
 Lighting,ELEC-LTG,LTG,98HMS-1-L30-ELEC-LTG,98HMS-1-L30-ELEC-LTG-02,Auto/Manaul Status,HMS-T:SNE-T1-L30-01/FC1.LTG-01.LTG-02-AM,aa7f3244-765b-52ed-a752-0e231664b86e,BI Mapper,LTG-02-AM,,0,TURE

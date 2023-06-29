@@ -4,7 +4,7 @@ import tensorflow as tf
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import precision_score
+from sklearn.metrics import accuracy_score
 from datetime import datetime
 import re
 pd.options.mode.chained_assignment = None
@@ -73,7 +73,6 @@ def asset_type(point):
         return point.asset_type
     ref = point.bms_item_reference
     name = point.bms_name
-
     type_by_name = next((a for a in ASSET_TYPES if re.search(f'^{a}', name)), None)
     type_by_ref = None
 
@@ -82,7 +81,7 @@ def asset_type(point):
         tokens = ref.split('.')[::-1]
         while tokens and not type_by_ref:
             token = tokens.pop()
-            type_by_ref = next((a for a in ASSET_TYPES if re.search(f'\.{a}', token)), None)
+            type_by_ref = next((a for a in ASSET_TYPES if re.search(f'^{a}', token)), None)
 
     if type_by_name and type_by_ref:
         if type_by_name == type_by_ref:
@@ -190,11 +189,11 @@ def train_asset_type_clf(points, clf=None):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     test_df = y_test.rename('actual_asset_type').to_frame()
     if not clf:
-        clf = DecisionTreeClassifier(criterion='entropy', splitter='random', random_state=42)
+        clf = DecisionTreeClassifier(criterion='entropy', random_state=42)
     clf.fit(X_train, y_train)
     test_df['predicted_asset_type'] = clf.predict(X_test)
     test_df = test_df.merge(points, left_index=True, right_index=True).merge(y_test, left_index=True, right_index=True)
-    print(f"Predicted asset type with {round(precision_score(test_df['actual_asset_type'], test_df['predicted_asset_type'], average='micro'), 3)} precision")
+    print(f"Predicted asset type with {round(accuracy_score(test_df['actual_asset_type'], test_df['predicted_asset_type']), 3)} accuracy")
     test_df['predicted_asset_type_raw'] = test_df['predicted_asset_type']
     test_df['matched'] = test_df.apply(lambda x: bool(re.search(f"\.{x['predicted_asset_type']}", x['reference'])), axis=1)
     test_df.loc[~test_df['matched'], 'predicted_asset_type'] = None
@@ -236,7 +235,7 @@ def export_to_csv(points):
 
 
 if __name__ == '__main__':
-    known_points = load_points('points_manually_mapped.csv', train=True, feel_lucky=True)
+    known_points = load_points('points_manually_mapped.csv', train=True, feel_lucky=False)
     clf = train_asset_type_clf(known_points)
     known_points = load_points('points.csv', train=True, feel_lucky=True)
     clf = train_asset_type_clf(known_points, clf)
