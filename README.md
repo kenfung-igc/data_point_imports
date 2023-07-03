@@ -9,9 +9,7 @@ Loaded 30532 points from points.csv
 
 Loaded 457 points from points_manually_mapped.csv
 
-Mappings unexpected:
-
-_discrepancies with manually mapped asset codes listed here_
+Mappings unexpected: _discrepancies with manually mapped asset codes (if any) are listed below_
 
 Exported asset code mappings to point_asset_code_20230703211221.csv
 
