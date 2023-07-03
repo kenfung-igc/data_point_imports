@@ -161,18 +161,19 @@ def superlist(*args):
 
 
 def reconcile(mapping, expected_mapping):
-    OUTPUT = ['reference', 'bms_name', 'expected_asset_code', 'asset_code']
+    OUTPUT = ['reference', 'bms_name', 'asset_code_manually_mapped', 'asset_code']
     mismatch = mapping.merge(expected_mapping, how='inner', on='bms_item_reference')
-    mismatch.rename(columns={'asset_code_x': 'asset_code', 'asset_code_y': 'expected_asset_code', 'bms_name_x': 'bms_name', 'reference_x': 'reference'}, inplace=True)
-    mismatch = mismatch[mismatch['asset_code'] != mismatch['expected_asset_code']][OUTPUT]
+    mismatch.rename(columns={'asset_code_x': 'asset_code', 'asset_code_y': 'asset_code_manually_mapped', 'bms_name_x': 'bms_name', 'reference_x': 'reference'}, inplace=True)
+    mismatch = mismatch[mismatch['asset_code'] != mismatch['asset_code_manually_mapped']][OUTPUT]
     if len(mismatch):
         print(f"Mappings unexpected:\n{mismatch[OUTPUT]}")
+    return mismatch
 
 
 def export_to_csv(points):
     timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
     points.sort_values(by=['class', 'asset_group', 'asset_code', 'point_type'], inplace=True)
-    points[['asset_group', 'asset_code', 'bms_item_reference', 'bms_name', 'point_type', 'point_description', 'bms_object_type', 'unit', 'class']].to_csv(f'point_asset_code_{timestamp}.csv')
+    points[['asset_group', 'asset_code', 'asset_code_manually_mapped', 'bms_item_reference', 'bms_name', 'point_type', 'point_description', 'bms_object_type', 'unit', 'class']].to_csv(f'point_asset_code_{timestamp}.csv')
     print(f'\nExported asset code mappings to point_asset_code_{timestamp}.csv')
     point_types = points[['asset_group', 'point_type', 'point_description', 'unit', 'class']].drop_duplicates()
     point_types = point_types[~point_types.asset_group.isna()]
@@ -184,8 +185,8 @@ if __name__ == '__main__':
     points = load_points('points.csv', mapping=True, include_alarms=True)
     map_attributes(points)
     known_points = load_points('points_manually_mapped.csv', strict=True)
-    reconcile(points, known_points)
-    export_to_csv(points)
+    mismatch = reconcile(points, known_points)
+    export_to_csv(points.merge(mismatch, how='left'))
 
     # known_points = load_points('points_manually_mapped.csv', train=True, feel_lucky=False)
     # clf = train_asset_type_clf(known_points)
