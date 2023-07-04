@@ -55,6 +55,11 @@ def asset_code(point):
     return None
 
 
+def description(point, point_mapping):
+    return re.sub('(?<=[Pump|ACB])\d', '', re.sub('[- ]+\d+', '', re.sub('-?[T|L|Z|G|GT|Duct]\d+', '', point_mapping.loc[point.asset_group, point.point_type]['bms_description'][0]))).replace('"" ', '').replace('()', '').strip()
+
+
+
 def map_attributes(points):
     points.loc[:, 'asset_seq'] = points.apply(asset_seq, axis=1)
     points.loc[:, 'asset_group'] = points.apply(asset_group, axis=1)
@@ -63,7 +68,7 @@ def map_attributes(points):
     points.loc[:, 'class'] = points.apply(lambda x: 'Alarm' if re.search('alarm', x.bms_object_type.lower()) else 'Point', axis=1)
     points_to_map = points[~points['asset_group'].isna()]
     mapping = generate_mapping(points_to_map)
-    points.loc[:, 'point_description'] = points_to_map.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_description'][0], axis=1)
+    points.loc[:, 'point_description'] = points_to_map.apply(description, args=(mapping, ), axis=1)
     points.loc[:, 'unit'] = points_to_map.apply(lambda x: mapping.loc[x.asset_group, x.point_type]['bms_units'][0].lstrip('unitEnumSet.'), axis=1)
     return points
 
