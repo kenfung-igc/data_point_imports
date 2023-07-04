@@ -17,8 +17,17 @@ def standardize(name):
     return re.sub('(?<!CO)(\d+)', '#', re.sub('DDC-T[-\w]+\.', '', re.sub('FC\d\.', '', name.upper())))
 
 
+def is_alarm(point):
+    return bool(re.search('alarm', point.bms_object_type.lower()))
+
+
 def point_type(point):
-    return re.sub('(?<!CO)(\d+)', '#', point.bms_name.upper())
+    type = re.sub('(?<!CO)(\d+)', '#', point.bms_name.upper())
+    if is_alarm(point):
+        return type
+    else:
+        return type.replace(' ', '')
+
 
 
 def asset_seq(point):
