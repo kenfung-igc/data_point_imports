@@ -56,7 +56,7 @@ def asset_code(point):
 
 
 def description(point, point_mapping):
-    return re.sub('(?<=[Pump|ACB])\d', '', re.sub('[- ]+\d+', '', re.sub('-?[T|L|Z|G|GT|Duct]\d+', '', point_mapping.loc[point.asset_group, point.point_type]['bms_description'][0]))).replace('"" ', '').replace('()', '').strip()
+    return re.sub('(?<=[Pump|ACB])\d', '', re.sub('[- ]+\d+', '', re.sub('-?[T|L|Z|G|Duct]\d+', '', re.sub('GT\d', '', point_mapping.loc[point.asset_group, point.point_type]['bms_description'][0])))).replace('""', '').replace('()', '').replace('  ', ' ').strip()
 
 
 
